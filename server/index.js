@@ -7,95 +7,74 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 app.use(bodyParser.json())
 
-app.post('/create-account-hosted', async (req, res) => {
-    const externalAccount = req.body;
+const testAccount = 'acct_1K9qRb2EJLvc6AI2';
+const connectedTestAccount = 'acct_1K9qYC2Ep5PgP752';
+
+const errorHandler = (res, error, code) => {
+    console.log(error);
+    res.status(code);
+    res.send({error});
+}
+
+app.post('/create-payment-intent', async (req, res) => {
     try {
-        const account = await stripe.accounts.create({
-            type: 'custom',
-            business_type: 'individual',
-            requested_capabilities: ['card_payments', 'transfers'],
-            external_account: externalAccount
-        })
-
-        const accountLink = await stripe.accountLinks.create({
-            account: account.id,
-            type: 'account_onboarding',
-            refresh_url: 'https://example.com?success',
-            return_url: 'https://example.com?failure',
-            collect: 'eventually_due'
-            // type: 'custom_account_verification',
-        })
-
-        res.send(accountLink);
+        const intent = await stripe.paymentIntents.create({
+            amount: 2000,
+            currency: 'usd',
+            payment_method_types: ['card'],
+            application_fee_amount: 123,
+            transfer_data: {
+                destination: connectedTestAccount,
+            },
+        });
+        res.send(intent);
         return;
     } catch (error) {
-        console.log(error);
-        res.status(400);
-        res.send({error});
-        return;
+        return errorHandler(res, error, 400)
     }
 })
 
-// app.post('/create-account', async (req, res) => {
-//     const data = req.body;
-//     try {
-//         const account = await stripe.accounts.create({
-//             type: 'custom',
-//             country: 'US',
-//             capabilities: {
-//                 card_payments: {
-//                     requested: true
-//                 },
-//                 transfers: {
-//                     requested: true
-//                 },
-//             },
-//             tos_acceptance: {
-//                 ip: '8.8.8.8',
-//                 date: Math.floor((new Date()).getTime() / 1000),
-//             },
-//             business_profile: {
-//                 mcc: '5734',
-//                 url: 'https://bestcookieco.com'
-//             },
-//             external_account: {
-//                 object: "bank_account",
-//                 country: "US",
-//                 currency: "usd",
-//                 account_holder_name: 'Jane Austen',
-//                 account_holder_type: 'individual',
-//                 routing_number: "110000000",
-//                 account_number: "000123456789"
-//             },
-//             business_type: 'individual',
-//             individual: {
-//                 id_number: 222222222,
-//                 first_name: 'Alice28',
-//                 last_name: 'Smith11',
-//                 dob: {
-//                     day: 01,
-//                     month: 01,
-//                     year: 1901
-//                 },
-//                 address: {
-//                     line1: '123 State St',
-//                     postal_code: 12345,
-//                     city: 'Schenectady',
-//                     state: 'NY'
-//                 },
-//                 email: 'eugene@theneurite.com',
-//                 phone: 8888675309,
-//                 ssn_last_4: 2222
-//             }
-//         })
-//         res.send(account);
-//         return;
-//     } catch (error) {
-//         console.log(error);
-//         res.status(400);
-//         res.send({error});
-//         return;
-//     }
-// })
+app.get('/retrieve-account', async (_, res) => {
+    try {
+        const account = await stripe.accounts.retrieve(testAccount);
+        res.send(account);
+        return;
+    } catch (error) {
+        return errorHandler(res, error, 400)
+    }
+})
+
+app.post('/delete-account', async (_, res) => {
+    try {
+        const account = await stripe.accounts.del(testAccount);
+        res.send(account);
+        return;
+    } catch (error) {
+        return errorHandler(res, error, 400)
+    }
+})
+
+app.post('/connect-account', async (_, res) => {
+    try {
+        const account = await stripe.accounts.create({
+            type: 'express',
+            business_type: 'individual',
+            capabilities: {
+                card_payments: {requested: true},
+                transfers: {requested: true},
+            },
+        })
+        const accountLink = await stripe.accountLinks.create({
+            account: account.id,
+            type: 'account_onboarding',
+            refresh_url: 'https://example.com/reauth',
+            return_url: 'https://example.com/return',
+            collect: 'eventually_due'
+        })
+        return res.send(accountLink);
+    } catch (error) {
+        return errorHandler(res, error, 400)
+    }
+})
 
 app.listen(4242, () => console.log('connected'));

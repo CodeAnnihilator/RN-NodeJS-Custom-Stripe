@@ -3,14 +3,17 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import {TouchableOpacity, Text, ActivityIndicator} from 'react-native';
 import {View} from 'react-native';
 
-import styles from './StripeConnectButtonStyles';
+import stylesFactory from './StripeConnectButtonStyles';
 
 const StripeConnectButton = ({
-    isDisabled,
-    isLoading,
+    type='connect',
+    isDisabled=false,
+    isLoading=false,
     onPress
 }) => {
+    const isConnect = type === 'connect';
     const isInteractive = !isLoading && !isDisabled;
+    const styles = stylesFactory(isConnect);
     return (
         <View opacity={isInteractive ? 1 : 0.6}>
             <TouchableOpacity
@@ -18,7 +21,7 @@ const StripeConnectButton = ({
                 style={styles.wrapper}
             >
                 { isLoading && <ActivityIndicator size='small' /> }
-                <Text style={styles.text}>Connect with</Text>
+                <Text style={styles.text}>{isConnect ? 'Connect with' : 'Disconnect from'}</Text>
                 <Icon
                     style={styles.logo}
                     name='stripe'

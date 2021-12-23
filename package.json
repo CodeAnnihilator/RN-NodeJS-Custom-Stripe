@@ -19,6 +19,8 @@
     "react": "17.0.2",
     "react-native": "0.66.4",
     "react-native-classnames": "^0.1.1",
+    "react-native-config": "^1.4.5",
+    "react-native-stripe-checkout-webview": "^0.0.13",
     "react-native-vector-icons": "^9.0.0",
     "react-native-webview": "^11.15.0"
   },
